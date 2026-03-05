@@ -42,10 +42,26 @@ double get_elapsed_seconds() {
 // PERSON 2: THE TIME & FORMATTING
 // =========================================================================
 void format_and_print_message(FILE *out_file, char *raw_pipe_buffer) {
-  // [PERSON 2 TODO]: Use strtok_r to split `raw_pipe_buffer` by newlines.
-  // For each line, prepend the parent's current timestamp (get_timestamp)
-  // and output using fprintf() in the format: [ParentTime] [ChildLine]
-  // Make sure to fflush(out_file)!
+    char *saveptr;
+    char *line;
+    char parent_ts[32];
+
+    // Split the buffer by newline
+    line = strtok_r(raw_pipe_buffer, "\n", &saveptr);
+
+    while (line != NULL) {
+        // Get parent timestamp
+        get_timestamp(parent_ts, sizeof(parent_ts));
+
+        // Print formatted message
+        fprintf(out_file, "[%s] %s\n", parent_ts, line);
+
+        // Ensure it is written immediately
+        fflush(out_file);
+
+        // Get next line
+        line = strtok_r(NULL, "\n", &saveptr);
+    }
 }
 
 // =========================================================================
@@ -82,14 +98,27 @@ void run_generator_child(int child_index, int write_fd) {
 // =========================================================================
 // PERSON 4: THE INTERACTIVE NODE (Child 5)
 // =========================================================================
-void run_interactive_child(int write_fd) {
-  // [PERSON 4 TODO]: Run a while loop checking get_elapsed_seconds() < 30.0.
-  // Inside the loop: Use select() on STDIN_FILENO with a timeout (e.g. 2s)
-  // so you don't block past the 30-second mark.
-  // If select() detects keyboard input:
-  // 1. Read input with fgets().
-  // 2. Strip trailing \n with strcspn().
-  // 3. Format with get_timestamp() and write() to `write_fd`.
+void format_and_print_message(FILE *out_file, char *raw_pipe_buffer) {
+    char *saveptr;
+    char *line;
+    char parent_ts[32];
+
+    // Split the buffer by newline
+    line = strtok_r(raw_pipe_buffer, "\n", &saveptr);
+
+    while (line != NULL) {
+        // Get parent timestamp
+        get_timestamp(parent_ts, sizeof(parent_ts));
+
+        // Print formatted message
+        fprintf(out_file, "[%s] %s\n", parent_ts, line);
+
+        // Ensure it is written immediately
+        fflush(out_file);
+
+        // Get next line
+        line = strtok_r(NULL, "\n", &saveptr);
+    }
 }
 
 // =========================================================================
