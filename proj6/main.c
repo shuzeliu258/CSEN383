@@ -70,6 +70,64 @@ void run_interactive_child(int write_fd) {
   // 1. Read input with fgets().
   // 2. Strip trailing \n with strcspn().
   // 3. Format with get_timestamp() and write() to `write_fd`.
+  int msg_count = 0;
+  int prompted = 0;
+
+  setvbuf(stdout, NULL, _IOLBF, 0);
+
+  while (get_elapsed_seconds() < 30.0) {
+    if (!prompted) {
+      printf("Child 5> ");
+      fflush(stdout);
+      prompted = 1;
+    }
+
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    FD_SET(STDIN_FILENO, &rfds);
+
+    struct timeval tv;
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+
+    int ret = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &tv);
+    if (ret < 0) {
+      continue;
+    }
+    if (ret == 0) {
+      continue;
+    }
+
+    if (FD_ISSET(STDIN_FILENO, &rfds)) {
+      char line[BUFFER_SIZE];
+
+      if (fgets(line, sizeof(line), stdin) == NULL) {
+        // Ctrl+D / EOF
+        break;
+      }
+
+      line[strcspn(line, "\n")] = '\0';
+
+      if (line[0] == '\0') {
+        prompted = 0;
+        continue;
+      }
+
+      msg_count++;
+
+      char ts[32];
+      get_timestamp(ts, sizeof(ts));
+
+      char payload[BUFFER_SIZE];
+      snprintf(payload, sizeof(payload),
+               "%s: Child 5: %dth text msg from the terminal: %s\n",
+               ts, msg_count, line);
+
+      write(write_fd, payload, strlen(payload));
+
+      prompted = 0;
+    }
+  }
 }
 
 // =========================================================================
