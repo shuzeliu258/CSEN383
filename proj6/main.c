@@ -42,10 +42,26 @@ double get_elapsed_seconds() {
 // PERSON 2: THE TIME & FORMATTING
 // =========================================================================
 void format_and_print_message(FILE *out_file, char *raw_pipe_buffer) {
-  // [PERSON 2 TODO]: Use strtok_r to split `raw_pipe_buffer` by newlines.
-  // For each line, prepend the parent's current timestamp (get_timestamp)
-  // and output using fprintf() in the format: [ParentTime] [ChildLine]
-  // Make sure to fflush(out_file)!
+    char *saveptr;
+    char *line;
+    char parent_ts[32];
+
+    // Split the buffer by newline
+    line = strtok_r(raw_pipe_buffer, "\n", &saveptr);
+
+    while (line != NULL) {
+        // Get parent timestamp
+        get_timestamp(parent_ts, sizeof(parent_ts));
+
+        // Print formatted message
+        fprintf(out_file, "[%s] %s\n", parent_ts, line);
+
+        // Ensure it is written immediately
+        fflush(out_file);
+
+        // Get next line
+        line = strtok_r(NULL, "\n", &saveptr);
+    }
 }
 
 // =========================================================================
