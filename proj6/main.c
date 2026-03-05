@@ -52,11 +52,31 @@ void format_and_print_message(FILE *out_file, char *raw_pipe_buffer) {
 // PERSON 3: THE GENERATOR NODES (Child 1-4)
 // =========================================================================
 void run_generator_child(int child_index, int write_fd) {
-  // [PERSON 3 TODO]: Seed srand() uniquely for this child.
+  // Seed srand() uniquely for this child.
   // Run a while loop checking get_elapsed_seconds() < 30.0.
   // Inside the loop: sleep for 0, 1, or 2 seconds randomly.
   // Use get_timestamp() to format your payload, e.g. "[ChildTime] [CHILD n]
   // Message X\n" and write() it to `write_fd`.
+
+  srand(time(NULL) ^ (getpid() << 16));
+    int msg_count = 1;
+    char msg_buffer[BUFFER_SIZE];
+    char ts_buffer[32];
+
+    while (get_elapsed_seconds() < 30.0) {
+        sleep(rand() % 3);
+
+        // Re-check time after sleeping to ensure we don't write at 31+ seconds
+        if (get_elapsed_seconds() >= 30.0) break;
+
+        get_timestamp(ts_buffer, sizeof(ts_buffer));
+        int len = snprintf(msg_buffer, sizeof(msg_buffer), "%s: Child %d message %d\n",
+                           ts_buffer, child_index, msg_count);
+
+        write(write_fd, msg_buffer, len);
+        msg_count++;
+    }
+    close(write_fd); 
 }
 
 // =========================================================================
