@@ -98,27 +98,72 @@ void run_generator_child(int child_index, int write_fd) {
 // =========================================================================
 // PERSON 4: THE INTERACTIVE NODE (Child 5)
 // =========================================================================
-void format_and_print_message(FILE *out_file, char *raw_pipe_buffer) {
-    char *saveptr;
-    char *line;
-    char parent_ts[32];
+void run_interactive_child(int write_fd) {
+  // [PERSON 4 TODO]: Run a while loop checking get_elapsed_seconds() < 30.0.
+  // Inside the loop: Use select() on STDIN_FILENO with a timeout (e.g. 2s)
+  // so you don't block past the 30-second mark.
+  // If select() detects keyboard input:
+  // 1. Read input with fgets().
+  // 2. Strip trailing \n with strcspn().
+  // 3. Format with get_timestamp() and write() to `write_fd`.
+  int msg_count = 0;
+  int prompted = 0;
 
-    // Split the buffer by newline
-    line = strtok_r(raw_pipe_buffer, "\n", &saveptr);
+  setvbuf(stdout, NULL, _IOLBF, 0);
 
-    while (line != NULL) {
-        // Get parent timestamp
-        get_timestamp(parent_ts, sizeof(parent_ts));
-
-        // Print formatted message
-        fprintf(out_file, "[%s] %s\n", parent_ts, line);
-
-        // Ensure it is written immediately
-        fflush(out_file);
-
-        // Get next line
-        line = strtok_r(NULL, "\n", &saveptr);
+  while (get_elapsed_seconds() < 30.0) {
+    if (!prompted) {
+      printf("Child 5> ");
+      fflush(stdout);
+      prompted = 1;
     }
+
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    FD_SET(STDIN_FILENO, &rfds);
+
+    struct timeval tv;
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+
+    int ret = select(STDIN_FILENO + 1, &rfds, NULL, NULL, &tv);
+    if (ret < 0) {
+      continue;
+    }
+    if (ret == 0) {
+      continue;
+    }
+
+    if (FD_ISSET(STDIN_FILENO, &rfds)) {
+      char line[BUFFER_SIZE];
+
+      if (fgets(line, sizeof(line), stdin) == NULL) {
+        // Ctrl+D / EOF
+        break;
+      }
+
+      line[strcspn(line, "\n")] = '\0';
+
+      if (line[0] == '\0') {
+        prompted = 0;
+        continue;
+      }
+
+      msg_count++;
+
+      char ts[32];
+      get_timestamp(ts, sizeof(ts));
+
+      char payload[BUFFER_SIZE];
+      snprintf(payload, sizeof(payload),
+               "%s: Child 5: %dth text msg from the terminal: %s\n",
+               ts, msg_count, line);
+
+      write(write_fd, payload, strlen(payload));
+
+      prompted = 0;
+    }
+  }
 }
 
 // =========================================================================
